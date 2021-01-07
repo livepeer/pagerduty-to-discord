@@ -70,6 +70,11 @@ if (typeof addEventListener === "function") {
     if (typeof DISCORD_URL !== "string") {
       throw new Error("missing DISCORD_URL secret");
     }
+    if (typeof SECRET_PATH === "string") {
+      if (!req.url.endsWith(SECRET_PATH)) {
+        return new Response("unauthorized", { status: 403 });
+      }
+    }
     let res;
     try {
       const data = await req.json();
