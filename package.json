@@ -1,0 +1,19 @@
+{
+  "name": "pagerduty-to-discord",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "html-to-text": "^6.0.0",
+    "isomorphic-fetch": "^3.0.0"
+  },
+  "devDependencies": {
+    "parcel": "^1.12.4"
+  },
+  "browserslist": [
+    "node 12"
+  ],
+  "scripts": {
+    "prepare": "parcel build --no-minify --bundle-node-modules -t browser pagerduty-to-discord.mjs"
+  }
+}
