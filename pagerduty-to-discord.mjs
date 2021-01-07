@@ -14,6 +14,16 @@ const emojis = {
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
+const discordHook = async (discordUrl, content) => {
+  return await fetch(discordUrl, {
+    method: "post",
+    body: JSON.stringify({ content }),
+    headers: {
+      "content-type": "application/json",
+    },
+  });
+};
+
 export default async function pagerdutyToDiscord({ event, discordUrl }) {
   for (const message of event.messages) {
     const emoji = emojis[message.event] || "❓";
@@ -33,7 +43,11 @@ export default async function pagerdutyToDiscord({ event, discordUrl }) {
         }
         return `       ${x}`;
       });
-    if (message.event === "incident.trigger" && channel.type === "email") {
+    if (
+      message.event === "incident.trigger" &&
+      channel &&
+      channel.type === "email"
+    ) {
       const body = htmlToText(channel.body)
         .split("\n")
         .map((line) => line.trim())
@@ -42,13 +56,7 @@ export default async function pagerdutyToDiscord({ event, discordUrl }) {
       content.push("```" + `from: ${channel.from}\n\n${body}` + "```");
     }
 
-    const res = await fetch(discordUrl, {
-      method: "post",
-      body: JSON.stringify({ content: content.join("\n") }),
-      headers: {
-        "content-type": "application/json",
-      },
-    });
+    const res = await discordHook(discordUrl, content.join("\n"));
     if (res.status !== 204) {
       throw new Error(await res.text());
     }
@@ -62,11 +70,23 @@ if (typeof addEventListener === "function") {
     if (typeof DISCORD_URL !== "string") {
       throw new Error("missing DISCORD_URL secret");
     }
-    const data = await req.json();
-    const res = await pagerdutyToDiscord({
-      event: data,
-      discordUrl: DISCORD_URL,
-    });
+    let res;
+    try {
+      const data = await req.json();
+      res = await pagerdutyToDiscord({
+        event: data,
+        discordUrl: DISCORD_URL,
+      });
+    } catch (e) {
+      res = await discordHook(
+        DISCORD_URL,
+        `Error in Discord hook: ${e.message}
+        ${"```"}
+        ${e.stack}
+        ${"```"}
+      `
+      );
+    }
 
     return res;
   }
